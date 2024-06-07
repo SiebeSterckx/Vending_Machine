@@ -1,13 +1,15 @@
+#include<iostream>
+#include<string>
+#include <sstream>
+
 
 using namespace std;
 
-
-string allebestellingen(string allchoices) {
-	
-        stringstream ss(allchoices);
+void previous_drinks(string allchoices) {        
+		stringstream ss(allchoices);
         string item;
         if (!allchoices.empty()) {
-            cout << endl << "Dit zijn je eerder bestelde drankjes:";
+            cout << endl << "These are your previously ordered drinks:";
             while (getline(ss, item, ',')) {
                 istringstream itemStream(item);
                 int selectedchoice;
@@ -18,7 +20,6 @@ string allebestellingen(string allchoices) {
                 }
             }
         } else {
-            cout << endl << "Je hebt nog geen andere drankjes besteld";
+            cout << endl << "You haven't ordered any drinks yet";
         }
-
-}
+    }

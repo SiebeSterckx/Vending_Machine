@@ -1,28 +1,26 @@
 #include<iostream>
 #include <string>
 #include <sstream>
-//#include <vector>
-//#include <stdexcept>
-// Nodig voor atof
+// Needed for atof
 #include <cstdlib>
 
 #include "menu.cpp"
-#include "vorigedrankjes.h"
-#include "totaleprijs.h"
-#include "betaalcash.h"
+#include "previous_drinks.h"
+#include "total_price.h"
+#include "pay_cash.h"
 
 
 
 using namespace std;
 
-// Functie om int om te zetten naar string m.b.v. stringstream
+// Function to convert integer to string using stringstream
 string intToString(int num) {
     stringstream ss;
     ss << num;
     return ss.str();
 }
 
-// Hoofdprogramma
+// Main program
 int main()
 {
     char menucall = 'N';
@@ -30,97 +28,126 @@ int main()
     string allchoices;
 
 
-	// Keuze pagina ------------------------------
+	// CHOICE SCREEN ------------------------------
     while (menucall == 'N' or menucall == 'n')
     {
-        // Oproepen van subprogramma menu
+        // Calling header file 'menu'
         menu();
-        // Hier worden alle eerder gekozen drankjes getoond
-        vorigeDrankjes(allchoices); 
+        // All previously selected drinks are displayed, calling header file 'previous_drinks'
+        previous_drinks(allchoices); 
 
-        // Het gekozen item word in de 'menuchoice' variabele gestoken
-        cout << endl << "Wat is jouw keuze? (1-8) ";
+        // The chosen item is stored in the 'menuchoice' variable
+        cout << endl << endl << "What do you want? (1-8) ";
         cin >> menuchoice;
-        // Alle gekozen items worden in de 'allchoices' variabele gestoken
+        // All selected items are stored in the 'allchoices' variable
         if (!allchoices.empty()) {
             allchoices += ",";
         }
-        allchoices += intToString(menuchoice);
+        
         cout << "\033[2J\033[1;1H";
 
-		// Laat zien welke keuze er gemaakt is + vraag om af te ronden
+		// Show which choice has been made + ask to finalize or to still order
         if (menuchoice >= 1 && menuchoice <= 8) {
-            cout << "Je hebt gekozen voor: " << getOption(menuchoice) << endl;
-        } else {
-            cout << "Ongeldige keuze! Er bestaat geen drankje met nummer " << menuchoice << endl;
+        // Extracting the stock count from the selected drink option
+        string selectedOption = getOption(menuchoice);
+        string stockPrefix = "Stock: ";
+        int stockIndex = selectedOption.find(stockPrefix);
+        if (stockIndex != string::npos) {
+            int stockStart = stockIndex + stockPrefix.length();
+            int endStockIndex = selectedOption.find_first_not_of("0123456789", stockStart);
+            if (endStockIndex == string::npos) {
+                endStockIndex = selectedOption.length();
+            }
+            string stockStr = selectedOption.substr(stockStart, endStockIndex - stockStart);
+            int stock = atoi(stockStr.c_str());
+
+            // Decreasing the stock count by 1
+            if (stock > 0) {
+                allchoices += intToString(menuchoice) + ",";
+                cout << "You have chosen for: " << selectedOption << endl;
+                stock--;
+
+                // Updating the option string with the new stock count
+                string updatedStock = selectedOption.substr(0, stockStart) + intToString(stock) + selectedOption.substr(endStockIndex);
+                // Overwrite new string
+                options[menuchoice - 1] = updatedStock;
+
+            } else {
+                cout << "The drink with number " << menuchoice << " is no longer in stock" << endl;
+            }
         }
-        cout << endl << "Wil je de bestelling afronden? (Y/N) ";
+    } else {
+        cout << "Invalid choice! There is no drink with number " << menuchoice << endl;
+    }
+        cout << endl << "Would you like to complete the order? (Y/N) ";
         cin >> menucall;
-        //cout << "Debug: menucall = " << menucall << endl;
         cout << "\033[2J\033[1;1H";
     }
 
 
-    // Betaal pagina ------------------------------
+    // PAYMENT SCREEN ------------------------------
     if (menucall == 'Y' or menucall == 'y') {
-    	// Check of transactie gelukt is, als dit niet gelukt is wordt de while lus opnieuw uitgevoerd
+    	// Check if transaction is successful, if not, the while loop will be executed again
     	while (true) {
-        // Hier moeten alle gekochte drankjes getoond worden
-        char betalingswijze;
-        double cashsaldo = 0.0;
-        char kaartsaldo;
+        // All purchased drinks must be displayed
+        char paymentmethod;
+        double cashbalance = 0.0;
+        char enoughcardbalance;
         double totalPrice = 0.0;
         if (!allchoices.empty()) {
-        cout << "Dit zijn de drankjes die je hebt besteld:";
+        cout << "These are the drinks you ordered:";
+        //cout << allchoices;
         
-        // Geeft totale prijs en alle geselecteerde drankjes
-        totalePrijs(allchoices, totalPrice);
+        // Provides total price and all selected drinks, calling header file 'total_price'
+        total_price(allchoices, totalPrice);
         
-        cout << endl << "Betaal je met kaart of cash? (K/C) ";
-        cin >> betalingswijze;
+        cout << endl << "Do you pay by card or cash? (R/S) ";
+        cin >> paymentmethod;
         cout << "\033[2J\033[1;1H";
 
-        // Betaal cash
-        if (betalingswijze == 'C' || betalingswijze == 'c') {
-            	betaalCash(cashsaldo, totalPrice);
-				break; // Verlaat de while lus als de betaling geslaagd is
+        // Pay in cash
+        if (paymentmethod == 'S' || paymentmethod == 's') {
+            	pay_cash(cashbalance, totalPrice); // Calling header file 'pay_cash'
+				break; // Exit while loop if payment was successful
 			} 
          
-        // Betaal met kaart
-        else if (betalingswijze == 'K' || betalingswijze == 'k') {
-            cout << "Je hebt gekozen om te betalen met de kaart";
-            cout << endl << "Heb je "<<totalPrice<< "€ op je bankrekening staan? (Y/N) ";
-            cin >> kaartsaldo;
+        // Pay by card
+        else if (paymentmethod == 'R' || paymentmethod == 'r') {
+            cout << "You have chosen to pay by card";
+            cout << endl << "Do you have "<<totalPrice<< "€ in your bank account? (Y/N) ";
+            cin >> enoughcardbalance;
             cout << "\033[2J\033[1;1H";
 
-            if (kaartsaldo == 'Y' || kaartsaldo == 'y') {
-                cout<< "Betaling succesvol uitgevoerd!" << endl;
-                break; // Verlaat de while lus als de betaling geslaagd is
-            } else if (kaartsaldo == 'N' || kaartsaldo == 'n') {
-                cout << "Betaling afgebroken door een ontoereikend saldo!";
-                cout << endl << "KIES EEN ANDERE BETAALMETHODE"<< endl << endl;
-                // De lus wordt niet onderbroken, dus het betalingsscherm wordt opnieuw getoond
+            if (enoughcardbalance == 'Y' || enoughcardbalance == 'y') {
+                cout<< "Payment successfully processed!" << endl << endl;
+                break; // Exit while loop if payment was successful
+            } else if (enoughcardbalance == 'N' || enoughcardbalance == 'n') {
+                cout << "Payment aborted due to insufficient balance!";
+                cout << endl << "CHOOSE ANOTHER PAYMENT METHOD"<< endl << endl;
+                // The loop is not interrupted, so the payment screen is shown again
             } else {
-                cout << "Programma werd afgesloten door een verkeerde invoer :/" << endl;
-                break; // Verlaat de lus bij verkeerde invoer
+                cout << "The program was terminated due to an incorrect input :/" << endl << endl;
+                break; // Exit while loop on incorrect input
             }
-        } 
-        // Verkeerde invoer voor betalingswijze
-        else {
-            cout << endl << "Programma werd afgesloten door een verkeerde invoer :/" << endl;
-            break; // Verlaat de lus bij verkeerde invoer
-        }
+        } else {
+            cout << endl << "The program was terminated due to an incorrect input :/" << endl << endl;
+            break; // Exit while loop on incorrect input
+        	}	
         
+    	} else {
+            cout << endl << "The program was terminated due to an incorrect input2 :/" << endl << endl;
+             break; // Exit while loop on incorrect input
+        	}
     	} 
-    } 
 	}
 	
-	// Zeg dat programma afsluit als er iets anders dan Y,y,N,n getypt werd.
+	// Terminate the program if anything other than Y, y, N, or n is typed
 	else {
-        cout << "Programma werd afgesloten door een verkeerde invoer :/" << endl;
+        cout << "The program was terminated due to an incorrect input :/" << endl << endl;
     }
 
-	// Einde ------------------------------
+	// END ------------------------------
+    system("pause");
     return 0;
 }
 
